@@ -3,7 +3,8 @@ ORIG    = $0200
 ; I/O is memory-mapped in py65:
 PUTC      = $f001
 GETC      = $f004
-INDJMP    = $6c
+; indirect jump opcode
+JMP_IND   = $6c
 
 TOS       = $20           ; top of data stack, in zero-page.
 BOS       = $de           ; bottom of data stack, in zero-page.
@@ -25,7 +26,7 @@ start
         txs
         cli
         ; set indirect jump opcode before code pointer
-        lda #INDJMP
+        lda #JMP_IND
         sta W-1
         ; initialize stack
         ldx #BOS
@@ -40,10 +41,10 @@ MAIN
         ; !word lit
         ; !text "A",0
         !word lit
-        !word 15
+        !word $9f9f
         !word lit
-        !word 16
-        !word less
+        !word 2
+        !word sar
         !word quit
         !word key
         !word find
@@ -459,23 +460,46 @@ builtin_equal
         inx
         jmp NEXT
 
-builtin_shl
-        nop
+builtin_shl             ; ( n1 n2 -- n1<<n2 ) shift left
+        ldy 0,x         ; loop counter
+-       asl 2,x
+        rol 3,x
+        dey
+        bne -
+        inx
+        inx
         jmp NEXT
 
-builin_shr
-        nop
+builin_shr              ; ( n1 n2 -- n1>>n2 ) shift right
+        ldy 0,x         ; loop counter
+-       lsr 3,x
+        ror 2,x
+        dey
+        bne -
+        inx
+        inx
         jmp NEXT
 
 builtin_sar
-        nop
+        ldy 0,x         ; loop counter
+-       lda 3,x
+        cmp #$80
+        ror
+        sta 3,x
+        ror 2,x
+        dey
+        bne -
+        inx
+        inx
         jmp NEXT
 
 builtin_argv
         nop
         jmp NEXT
 
-builtin_V               ; ( -- ) 'version' return the version number
+builtin_V               ; ( -- ) 'version' return the version string
+        dex
+        dex
         lda #<VERSION
         sta 0,x
         lda #>VERSION
@@ -646,6 +670,6 @@ version !word builtin_V
 
 LATEST_ !word _L37
 
-VERSION !text 0,"Planck 0.01",0
+VERSION !text "MOS6502-handwritten:Copyright(c) 2025 SHIMADA Keiki <shimada.cake at gmail.com>",0
 
 HERE_   !word *+2
