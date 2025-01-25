@@ -40,10 +40,10 @@ MAIN
         ; !word lit
         ; !text "A",0
         !word lit
-        !word 16
+        !word 15
         !word lit
         !word 16
-        !word mul
+        !word less
         !word quit
         !word key
         !word find
@@ -412,15 +412,51 @@ builtin_xor
         jmp NEXT
 
 builtin_less
-        nop
+        sec
+        lda 2,x
+        sbc 0,x
+        lda 3,x
+        sbc 1,x
+        sty 3,x         ; zero high byte (y = 0)
+        bvc +
+        eor #$80        ; correct overflow
++       bpl ++
+        iny             ; invert boolean
+++      sty 2,x         ; leave boolean
+        inx
+        inx
         jmp NEXT
 
 builtin_uless
-        nop
+        sec
+        lda 2,x
+        sbc 0,x
+        lda 3,x
+        sbc 1,x
+        sty 3,x         ; zero high byte (y = 0)
+        bvc +
+        eor #$80        ; correct overflow
++       bmi ++
+        iny             ; invert boolean
+++      sty 2,x         ; leave boolean
+        inx
+        inx
         jmp NEXT
 
 builtin_equal
-        nop
+        sec
+        lda 2,x
+        sbc 0,x
+        sta 2,x
+        lda 3,x
+        sbc 1,x
+        sty 3,x         ; zero high byte (y = 0)
+        ora 2,x
+        bne +
+        iny             ; if not zero, set false
++       sty 2,x         ; else, set false
+        inx
+        inx
         jmp NEXT
 
 builtin_shl
