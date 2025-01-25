@@ -330,7 +330,7 @@ builtin_add            ; (n1 n2 -- n3) '+' add n1 and n2
         inx
         jmp NEXT
 
-builtin_sub           ; (n1 n2 -- n3) '-' subtract n2 from n1
+builtin_sub            ; (n1 n2 -- n3) '-' subtract n2 from n1
         sec
         lda  2,x
         sbc  0,x
@@ -368,8 +368,8 @@ builtin_mul             ; ( n1 n2 -- n1*n2 ) multiply
         inx
         jmp NEXT
 
-builtin_divmod
-        nop
+builtin_divmod          ; ( n1 n2 -- n1/n2 n1%n2 ) divide
+        nop             ; TODO: implement
         jmp NEXT
 
 builtin_and
@@ -453,7 +453,7 @@ builtin_equal
         sty 3,x         ; zero high byte (y = 0)
         ora 2,x
         bne +
-        iny             ; if not zero, set false
+        iny             ; if zero, set true
 +       sty 2,x         ; else, set false
         inx
         inx
