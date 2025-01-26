@@ -36,15 +36,11 @@ start
         lda #>MAIN
         sta IP+1
         jmp NEXT
+        nop     ; padding
 
 MAIN
-        ; !word lit
-        ; !text "A",0
-        !word lit
-        !word $9f9f
-        !word lit
-        !word 2
-        !word sar
+        !word litstring
+        !text 4,"AbcD",0        ; length, string, padding
         !word quit
         !word key
         !word find
@@ -316,8 +312,27 @@ builtin_exit
         jmp NEXT
 
 builtin_litstring
-        nop
-        jmp NEXT
+        lda (IP),y      ; push the length of the string to the system stack
+        pha
+        inc IP
+        bcc +
+        inc IP+1
++       lda IP          ; push the address of the string to the parameter stack
+        dex
+        dex
+        sta 0,x
+        lda IP+1
+        sta 1,x
+        pla             ; advance IP to the next word by the length of the string
+        clc
+        adc IP
+        sta IP
+        bcc +
+        inc IP+1
++       and #$01       ; if the address is even, add 1 for padding
+        beq +
+        inc IP
++       jmp NEXT
 
 builtin_add            ; (n1 n2 -- n3) '+' add n1 and n2
         clc
