@@ -39,15 +39,24 @@ start
         nop     ; padding
 
 MAIN
-        !word litstring
-        !text 4,"AbcD",0        ; length, string, padding
-        !word quit
         !word key
         !word find
         !word execute
         !word branch
         !word -8
 
+DOCOL   LDA IP+1
+        PHA
+        LDA IP
+        PHA
+        CLC
+        LDA W
+        ADC #2
+        STA IP
+        TYA
+        ADC W+1
+        STA IP+1
+        ; fall through to NEXT
 ;
 ;    NEXT is the address interpreter that moves from machine
 ;    level word to word.
@@ -290,18 +299,13 @@ builtin_rstore    ; (addr -- ) 'R' set return stack pointer
         inx
         jmp NEXT
 
-builtin_docol
-        lda IP+1
-        pha
-        lda IP
-        pha
-        clc
-        lda W
-        adc #2
-        sta IP
-        tya
-        adc W+1
-        sta IP+1
+builtin_docol     ; ( -- addr ) 'i' push address of DOCOL
+        dex
+        dex
+        lda #<DOCOL
+        sta 0,x
+        lda #>DOCOL
+        sta 1,x
         jmp NEXT
 
 builtin_exit
@@ -527,12 +531,16 @@ builtin_V               ; ( -- ) 'version' return the version string
 inch
         lda GETC
         beq inch
-        rts
+        cmp #$0d                ; If CR is received, replace it with LF
+        bne +
+        lda #$0a
++       rts
 
 ; output a character to the terminal
 outch
         sta PUTC
         rts
+;;;
 
 DICT
 _L01    !word 00                ; last link marker
@@ -613,7 +621,7 @@ rstore  !word builtin_rstore
 
 _L20    !word _L19
         !text 1,"i"
-docol   !word builtin_docol
+docol_  !word builtin_docol
 
 _L21    !word _L20
         !text 1,"e"
