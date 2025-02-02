@@ -36,7 +36,9 @@ start
         lda #>MAIN
         sta IP+1
         jmp NEXT
+        !if * & 1 == 1 {
         nop     ; padding
+        }
 
 MAIN
         !word key
@@ -44,7 +46,13 @@ MAIN
         !word execute
         !word branch
         !word -8
-
+;
+;    fig-FORTH 6502 ASSEMBLY SOURCE LISTING
+;    This public domain publication is provided through the courtesy 
+;    of Forth Interest Group, P.O. Box 1105, San Carlos, CA 94070. 
+;    Further distribution must include this notice. 
+;    https://www.forth.org/fig-forth/fig-forth_6502.pdf
+;
 DOCOL   LDA IP+1
         PHA
         LDA IP
@@ -280,6 +288,7 @@ builtin_dstore    ; (addr -- ) 'D' set data stack pointer
 builtin_rfetch      ; ( -- addr) 'r' get return stack pointer
         stx XSAVE
         tsx
+        inx
         txa
         ldx XSAVE
         dex
@@ -293,6 +302,7 @@ builtin_rstore    ; (addr -- ) 'R' set return stack pointer
         stx XSAVE
         lda 0,x
         tax
+        dex
         txs
         ldx XSAVE
         inx
