@@ -85,6 +85,23 @@ L54     JMP W-1        ; Jump to an indirect jump (W) which
 ;                        vectors to code pointed to by a code
 ;                        field.
 
+;; http://6502.org/source/strings/comparisons.html
+
+STREQU  LDY #$00        ;Compare strings, case-sensitive
+        LDA (N+0),Y     ;Naturally, the zero flag is used to return if the strings are equal
+        CMP (N+2),Y
+        BEQ +
+        RTS
++       TAY
+.loop   LDA (N+2),Y
+        STA N+4
+        LDA (N+0),Y
+        CMP N+4
+        BNE .exit
+        DEY
+        BNE .loop
+.exit   RTS
+
 builtin_t               ; (c -- ) 'type' output TOS as a character
         lda 0,x
         stx XSAVE
