@@ -37,7 +37,7 @@ start
         sta IP+1
         jmp NEXT
         !if * & 1 == 1 {
-          nop     ; padding
+        nop     ; padding
         }
 
 MAIN
@@ -210,7 +210,7 @@ builtin_f               ; (c -- addr) 'find' search the dictionary for the word
         bne .next
         lda N
         clc
-        adc #6
+        adc #4
         sta 0,x
         bcc ++
         inc N+1
@@ -571,151 +571,151 @@ outch
 
 DICT
 _L01    !word 00                ; last link marker
-        !text 1,"t",0,0         ; length+flag, name
+        !text 1,"t"             ; length+flag, name
 type    !word builtin_t         ; code field
 
 _L02    !word _L01              ; link to previous word
-        !text 1,"L",0,0
+        !text 1,"L"
 lit     !word builtin_L
 
 _L03    !word _L02
-        !text 1,"Q",0,0
+        !text 1,"Q"
 quit    !word builtin_Q
 
 _L04    !word _L03
-        !text 1,"C",0,0
+        !text 1,"C"
 cell    !word builtin_C
 
 _L05    !word _L04
-        !text 1,"h",0,0
+        !text 1,"h"
 here    !word builtin_h
 
 _L06    !word _L05
-        !text 1,"l",0,0
+        !text 1,"l"
 latest  !word builtin_l
 
 _L07    !word _L06
-        !text 1,"k",0,0
+        !text 1,"k"
 key     !word builin_k
 
 _L08    !word _L07
-        !text 1,"j",0,0
+        !text 1,"j"
 branch  !word builtin_j
 
 _L09    !word _L08
-        !text 1,"J",0,0
+        !text 1,"J"
 zbranch !word builtin_J
 
 _L10    !word _L09
-        !text 1,"f",0,0
+        !text 1,"f"
 find    !word builtin_f
 
 _L11    !word _L10
-        !text 1,"x",0,0
+        !text 1,"x"
 execute !word builtin_x
 
 _L12    !word _L11
-        !text 1,"@",0,0
+        !text 1,"@"
 fetch   !word builtin_fetch
 
 _L13    !word _L12
-        !text 1,"!",0,0
+        !text 1,"!"
 store   !word builtin_store
 
 _L14    !word _L13
-        !text 1,"?",0,0
+        !text 1,"?"
 cfetch  !word builtin_cfetch
 
 _L15    !word _L14
-        !text 1,"$",0,0
+        !text 1,"$"
 cstore  !word builtin_cstore
 
 _L16    !word _L15
-        !text 1,"d",0,0
+        !text 1,"d"
 dfetch  !word builtin_dfetch
 
 _L17    !word _L16
-        !text 1,"D",0,0
+        !text 1,"D"
 dstore  !word builtin_dstore
 
 _L18    !word _L17
-        !text 1,"r",0,0
+        !text 1,"r"
 rfetch  !word builtin_rfetch
 
 _L19    !word _L18
-        !text 1,"R",0,0
+        !text 1,"R"
 rstore  !word builtin_rstore
 
 _L20    !word _L19
-        !text 1,"i",0,0
+        !text 1,"i"
 docol_  !word builtin_docol
 
 _L21    !word _L20
-        !text 1,"e",0,0
+        !text 1,"e"
 exit    !word builtin_exit
 
 _L22    !word _L21
-        !text 1,"S",0,0
+        !text 1,"S"
 litstring !word builtin_litstring
 
 _L23    !word _L22
-        !text 1,"+",0,0
+        !text 1,"+"
 plus    !word builtin_add
 
 _L24    !word _L23
-        !text 1,"-",0,0
+        !text 1,"-"
 minus   !word builtin_sub
 
 _L25    !word _L24
-        !text 1,"*",0,0
+        !text 1,"*"
 mul     !word builtin_mul
 
 _L26    !word _L25
-        !text 1,"/",0,0
+        !text 1,"/"
 divmod  !word builtin_divmod
 
 _L27    !word _L26
-        !text 1,"&",0,0
+        !text 1,"&"
 and_     !word builtin_and
 
 _L28    !word _L27
-        !text 1,"|",0,0
+        !text 1,"|"
 or      !word builtin_or
 
 _L29    !word _L28
-        !text 1,"^",0,0
+        !text 1,"^"
 xor     !word builtin_xor
 
 _L30    !word _L29
-        !text 1,"<",0,0
+        !text 1,"<"
 less    !word builtin_less
 
 _L31    !word _L30
-        !text 1,"u",0,0
+        !text 1,"u"
 uless   !word builtin_uless
 
 _L32    !word _L31
-        !text 1,"=",0,0
+        !text 1,"="
 equal   !word builtin_equal
 
 _L33    !word _L32
-        !text 1,"{",0,0
+        !text 1,"{"
 shl     !word builtin_shl
 
 _L34    !word _L33
-        !text 1,"}",0,0
+        !text 1,"}"
 shr     !word builin_shr
 
 _L35    !word _L34
-        !text 1,")",0,0
+        !text 1,")"
 sar     !word builtin_sar
 
 _L36    !word _L35
-        !text 1,"v",0,0
+        !text 1,"v"
 argv    !word builtin_argv
 
 _L37    !word _L36
-        !text 1,"V",0,0
+        !text 1,"V"
 version !word builtin_V
 
 LATEST_ !word _L37
