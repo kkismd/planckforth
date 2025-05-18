@@ -93,14 +93,14 @@ STREQU  LDY #$00        ;Compare strings, case-sensitive
         BEQ +
         RTS
 +       TAY
-.loop   LDA (N+2),Y
+@loop   LDA (N+2),Y
         STA N+4
         LDA (N+0),Y
         CMP N+4
-        BNE .exit
+        BNE @exit
         DEY
-        BNE .loop
-.exit   RTS
+        BNE @loop
+@exit   RTS
 
 builtin_t               ; (c -- ) 'type' output TOS as a character
         lda 0,x
@@ -202,12 +202,12 @@ builtin_f               ; (c -- addr) 'find' search the dictionary for the word
         sta N
         lda LATEST_+1
         sta N+1
-.loop   ldy #3
+@loop2  ldy #3
         lda (N),y       ; A <- registered word
         ; found the word?
         cmp 0,x
         ; [yes] -> push entry address to parameter stack
-        bne .next
+        bne @next
         lda N
         clc
         adc #4
@@ -217,7 +217,7 @@ builtin_f               ; (c -- addr) 'find' search the dictionary for the word
 ++      lda N+1
         sta 1,x
         jmp NEXT
-.next   ; [no]  -> follow link
+@next   ; [no]  -> follow link
         ldy #0
         lda (N),y
         pha
@@ -228,7 +228,7 @@ builtin_f               ; (c -- addr) 'find' search the dictionary for the word
         sta N+1
         pla
         sta N
-        jmp .loop
+        jmp @loop2
 
 builtin_x               ; ( -- ) 'execute' execute the word pointed to by TOS
         lda 0,x
