@@ -222,12 +222,11 @@ ca i,
 cA i, 'h, '@, 'a, 'h, '!, 'e, l!
 
 \ *** 文字列の比較。PASCAL文字列用に修正 ***
-\ *** F (find) で使用されているので、Fの実装も修正する必要がある ***
 \ 'E' ( c-addr1 c-addr2 -- flag ) STR=
 \ Compare pascal style strings.
 \ Return 1 if they are same 0 otherwise.
 cE i,
-    '#, '?, '{,		    \ カウンターをRスタックに保存する
+    '#, '?, '{,             \ カウンターをRスタックに保存する
 \ <loop>
     'o, '?, 'o, '?,         \ ( c-addr1 c-addr2 c1 c2 )         [4]        23 -> 23+1+48=72='H'
     '=, 'J, kCk0-C*,        \ goto <not_equal> if c1<>c2        [3]        19
@@ -243,7 +242,6 @@ cE i,
 \ <equal>
     '_, '_, '_, 'L, k1k0-, 'e, \ カウンターとc-addr1, c-addr2を捨てて1(TRUE)を積む
 l!
-
 
 \ *** 文字列長の検出。この実装はnull終端文字列を対象としている ***
 \ 'z' ( c-addr -- u ) STRLEN
@@ -291,9 +289,9 @@ i,
     '}, 'L, k1k0-, '+, '{,      \ increment counter
     'k, '#, 's, 'J, k0k>-C*,    \ goto <loop> if c is not space
     '_, '_,                     \ drop c, p
-    'L, ,                       \ return buf (バッファの先頭アドレスを定数として書き込む)
     '#,                         \ バッファの先頭アドレスを複製する
     '}, '~, '$,                 \ カウンタの値＝文字列の長さを先頭に書き込む
+    'L, ,                       \ return buf (バッファの先頭アドレスを定数として書き込む)
 'e, l!
 
 \ 'F' ( c-addr -- w )
@@ -314,6 +312,7 @@ cF i,
 \ <2>
             \ smudge-bit=0
             'o, 'o,                     \ ( addr it addr it )
+            \ 'L, Ck1k0-+, '+,        \ address of name \ 名前のアドレスではなく名前長のアドレスが必要なため削除
             \ ( addr1 it addr1 addr2 )
             'E, 'J, k0k7-C*,            \ goto <1> if different name
 \ <exit>
@@ -326,6 +325,36 @@ cG i,
     'C, '+, '#, '?, \ ( addr len+flag )
     'L, kok0-, '&,  \ take length
     '+,             \ add length to the addr
-    'L, k1k0-, '+,  \ add 2 to the addr (len+field)
+    'L, k1k0-, '+,  \ add 1 to the addr (len+field)
     'a,             \ align
 'e, l!
+
+\ 'M' ( -- a-addr)
+\ The state variable
+\ 0: immediate mode
+\ 1: compile mode
+h@ k0k0-,   \ allocate 1 cell and fill 0
+cM~ i, 'L, , 'e, l!
+
+\ 'I'
+\ The 2nd Stage Interpreter
+cI i,
+\ <loop>
+    'W,                 \ read name from input
+    'F,                 \ find word
+    'M, '@,             \ read state
+    'J, kAk0-C*,        \ goto <immediate> if state=0
+\ <compile>
+        '#, 'C, '+, '?, \ ( w len+flag )
+        'L, k@k@+, '&,  \ test immediate bit
+        'L, k0k0-, '=,
+        'J, k5k0-C*,    \ goto <immediate> if immediate-bit=1
+        'G, ',,         \ compile
+        'j, k0kE-C*,    \ goto <loop>
+\ <immediate>
+        'G, 'x,         \ execute
+        'j, k0kI-C*,    \ goto <loop>
+l!
+
+I \ Enter 2nd Stage
+
