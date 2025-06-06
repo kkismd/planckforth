@@ -278,10 +278,11 @@ i,
     \ skip leading spaces
     'k, '#, 's, 'J, k4k0-C*, '_, 'j, k0k7-C*,
     \ p=address of buffer
-    'L, #,
-    '#, 'L, k0k0-, '~, '$, 'L, k1k0-, '+, \ store 0 (length) and increment p
-    '~,
-    'L, k0k0-, '{, \ store 0 (counter value) to return stack
+    'L, #,                      \ バッファの先頭アドレスをスタックに積む
+    '#, 'L, k3k0-, '~, '$,      \ store 0 (length)
+    'L, k1k0-, '+,              \ increment p
+    '~,                         \ swap c-addr and p ( p c-addr )
+    'L, k0k0-, '{,              \ store 0 (counter value) to return stack
 \ <loop>
     \ ( p c )
     'o, '$,                     \ store c to p
@@ -289,7 +290,7 @@ i,
     '}, 'L, k1k0-, '+, '{,      \ increment counter
     'k, '#, 's, 'J, k0k>-C*,    \ goto <loop> if c is not space
     '_, '_,                     \ drop c, p
-    '#,                         \ バッファの先頭アドレスを複製する
+    'L, #,                      \ バッファの先頭アドレスをスタックに積む
     '}, '~, '$,                 \ カウンタの値＝文字列の長さを先頭に書き込む
     'L, ,                       \ return buf (バッファの先頭アドレスを定数として書き込む)
 'e, l!

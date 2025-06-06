@@ -275,11 +275,6 @@ builtin_cfetch        ; (addr -- c) '?' fetch a byte at addr
 builtin_cstore        ; (c addr -- ) '$' store a byte at addr
         lda 2,x
         sta (0,x)
-        inc 0,x
-        bne +
-        inc 1,x
-+       lda #0
-        sta (0,x)
         inx
         inx
         inx
