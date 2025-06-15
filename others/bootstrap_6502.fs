@@ -226,7 +226,8 @@ cA i, 'h, '@, 'a, 'h, '!, 'e, l!
 \ Compare pascal style strings.
 \ Return 1 if they are same 0 otherwise.
 cE i,
-    '#, '?, '{,             \ カウンターをRスタックに保存する
+    '#, '?, 'L, k1k0-, '+,  \ 文字列長+1をカウンターとして
+    '{,                     \ Rスタックに保存する
 \ <loop>
     'o, '?, 'o, '?,         \ ( c-addr1 c-addr2 c1 c2 )         [4]        23 -> 23+1+48=72='H'
     '=, 'J, kCk0-C*,        \ goto <not_equal> if c1<>c2        [3]        19
@@ -313,9 +314,9 @@ cF i,
 \ <2>
             \ smudge-bit=0
             'o, 'o,                     \ ( addr it addr it )
-            \ 'L, Ck1k0-+, '+,        \ address of name \ 名前のアドレスではなく名前長のアドレスが必要なため削除
+            'L, C, '+,                  \ address of len
             \ ( addr1 it addr1 addr2 )
-            'E, 'J, k0k7-C*,            \ goto <1> if different name
+            'E, 'J, k0k:-C*,            \ goto <1> if different name
 \ <exit>
     '{, '_, '}, \ Drop addr, return it
 'e, l!
@@ -358,4 +359,60 @@ cI i,
 l!
 
 I \ Enter 2nd Stage
+
+\ === 2nd Stage Interpreter ===
+
+} _     \ Drop 1st stage interpreter from call stack
+
+\ '\'' ( "name" -- xt )
+\ Redefine existing '\'' which uses 'k' and 'f'
+\ to use 'W' and 'F'.
+c ' i , ' W , ' F , ' G , ' e , l !
+
+\ [ immediate ( -- )
+\ Switch to immediate mode
+c [ i , ' L , k 0 k 0 - , ' M , ' ! , ' e , l !
+\ Set immediate-bit of [
+l @ C + # { ? k @ k @ + | } $
+
+\ ] ( -- )
+\ Switch to compile mode
+c ] i , ' L , k 1 k 0 - , ' M , ' ! , ' e , l !
+
+\ : ( "name" -- ) COLON
+\ Read name, create word with smudge=1,
+\ compile 'docol' and enter compile mode.
+c : i ,
+    ' A ,                   \ align here
+    ' h , ' @ ,
+    ' l , ' @ , ' , ,       \ fill link
+    ' l , ' ! ,             \ update latest
+    ' W ,                   \ read name ( addr )
+                            \ addrの先頭が長さ、次から名前
+    ' # , ' ? , ' ~ ,       \ ( len addr )
+    ' L , k 1 k 0 - , ' + , \ ( len addr+1 )
+    ' ~ , ' # ,             \ ( addr+1 len len )
+    ' L , k @ , ' | ,       \ set smudge-bit
+    ' B ,                   \ fill length + smudge-bit
+    ' m ,                   \ fill name
+    ' A ,                   \ align here
+    ' i , ' , ,             \ compile docol
+    ' ] ,                   \ enter compile mode
+' e , l !
+
+\ ; ( -- ) SEMICOLON
+\ Compile 'exit', unsmudge latest, and enter immediate mode.
+c ; i ,
+    ' A ,               \ align here
+    ' L , ' e , ' , ,   \ compile exit
+    ' l , ' @ ,
+    ' C , ' + , ' # , ' ? ,
+    ' L , k [ k d + ,   \ 0xbf
+    ' & , ' ~ , ' $ ,   \ unsmudge
+    ' [ ,               \ enter immediate mode
+' e , l !
+\ Set immediate-bit of ';'
+l @ C + # { ? k @ k @ + | } $
+
+: immediate-bit [ ' L , k @ k @ + , ] ; \ 0x80
 

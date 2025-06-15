@@ -29,7 +29,7 @@ start
         lda #JMP_IND
         sta W-1
         ; initialize stack
-        ldx #BOS
+        ldx #BOS+2
         ; set IP to start of code
         lda #<MAIN
         sta IP
