@@ -1,8 +1,10 @@
 
-ORIG    = $0200
+ORIG    = $1000
 ; I/O is memory-mapped in py65:
 PUTC      = $f001
 GETC      = $f004
+HALT      = $f002
+
 ; indirect jump opcode
 JMP_IND   = $6c
 
@@ -13,9 +15,6 @@ IP        = N+8           ; (= $e8) interpretive pointer.
 W         = IP+3          ; (= $eb) code field pointer.
 XSAVE     = W+2           ; (= $ed) temporary for X register.
 
-        ; origin of memory
-        * = 0
-        !fill ORIG, 0
         ; program start addres
         * = ORIG
 
@@ -129,7 +128,7 @@ put     sta 1,x
         jmp NEXT
 
 builtin_Q
-        brk
+        jmp HALT
 
 builtin_C               ; ( -- n) 'cell' push a size of cell
         dex
@@ -551,7 +550,7 @@ builtin_V               ; ( -- ) 'version' return the version string
 
 ; wait until a key is pressed and then return it
 inch
-        lda GETC
+        jsr GETC
         beq inch
         cmp #$0d                ; If CR is received, replace it with LF
         bne +
@@ -560,7 +559,7 @@ inch
 
 ; output a character to the terminal
 outch
-        sta PUTC
+        jsr PUTC
         rts
 ;;;
 
