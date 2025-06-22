@@ -414,5 +414,8 @@ c ; i ,
 \ Set immediate-bit of ';'
 l @ C + # { ? k @ k @ + | } $
 
-: immediate-bit [ ' L , k @ k @ + , ] ; \ 0x80
-
+\ 'd' = 100, '(' = 40, '_' = 95
+\ 'd' * '(' + '_' = 4095 = $0fff
+k 1 k 0 - 
+k d k ( * k _ + !
+: foo ;

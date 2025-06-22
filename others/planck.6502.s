@@ -15,6 +15,8 @@ IP        = N+8           ; (= $e8) interpretive pointer.
 W         = IP+3          ; (= $eb) code field pointer.
 XSAVE     = W+2           ; (= $ed) temporary for X register.
 
+DEBUG     = ORIG-1        ; (= $0fff) debug flag 0=off 1=on
+
         ; program start addres
         * = ORIG
 
@@ -34,9 +36,16 @@ start
         sta IP
         lda #>MAIN
         sta IP+1
+
+        ; init denug flag
+        lda #0
+        sta DEBUG
+
         jmp NEXT
+
+        ; alignment
         !if * & 1 == 1 {
-        nop     ; padding
+        nop
         }
 
 MAIN
@@ -74,6 +83,9 @@ NEXT    LDY #1
         DEY
         LDA (IP),Y
         STA W
+
+        jsr dump_stack ;;; debug print
+
         CLC            ; Increment IP by two.
         LDA IP
         ADC #2
@@ -410,7 +422,9 @@ builtin_mul             ; ( n1 n2 -- n1*n2 ) multiply
         jmp NEXT
 
 builtin_divmod          ; ( n1 n2 -- n1/n2 n1%n2 ) divide
-        nop             ; TODO: implement
+        nop
+        inx
+        inx
         jmp NEXT
 
 builtin_and
@@ -537,6 +551,7 @@ builtin_argv
         nop
         jmp NEXT
 
+
 builtin_V               ; ( -- ) 'version' return the version string
         dex
         dex
@@ -545,6 +560,106 @@ builtin_V               ; ( -- ) 'version' return the version string
         lda #>VERSION
         sta 1,x
         jmp NEXT
+
+;;; helper routines
+; [debug] print stack address and value
+dump_stack
+        ;; test debug flag
+        lda DEBUG
+        bne +
+        rts ; do nothing unless debug mode
++
+
+        ; data stack address
+        lda #'X'
+        jsr outch
+        lda #'='
+        jsr outch
+        txa
+        jsr print_hex
+        lda #' '
+        jsr outch
+
+        ; stack value
+        lda #'S'
+        jsr outch
+        lda #'T'
+        jsr outch
+        lda #'='
+        jsr outch
+        lda 1,x
+        jsr print_hex
+        lda 0,x
+        jsr print_hex
+        lda #' '
+        jsr outch
+
+        ; system stack address
+        lda #'S'
+        jsr outch
+        lda #'='
+        jsr outch
+        stx XSAVE
+        tsx
+        txa
+        jsr print_hex
+        lda #' '
+        jsr outch
+        ldx XSAVE
+        
+
+        ; return pointer
+        lda #'R'
+        jsr outch
+        lda #'P'
+        jsr outch
+        lda #'='
+        jsr outch
+        stx XSAVE
+        tsx
+        lda $0104,x
+        jsr print_hex
+        lda $0103,x
+        jsr print_hex
+        ldx XSAVE
+        lda #' '
+        jsr outch
+
+        ; instruction pointer
+        lda #'I'
+        jsr outch
+        lda #'P'
+        jsr outch
+        lda #'='
+        jsr outch
+        lda W+1
+        jsr print_hex
+        lda W
+        jsr print_hex
+
+        lda #$0a
+        jsr outch
+        
+        rts        
+
+print_hex
+        pha
+        lsr
+        lsr
+        lsr
+        lsr
+        jsr @puthex1
+        pla
+@puthex1
+        and #$0f
+        cmp #$0a
+        bcc +
+        adc #$26
++       adc #$30
+        jsr outch
+        rts
+        
+
 
 ;;; console input/output routines (for py65)
 
@@ -562,6 +677,10 @@ outch
         jsr PUTC
         rts
 ;;;
+        ; alignment
+        !if * & 1 == 1 {
+        nop
+        }
 
 DICT
 _L01    !word 00                ; last link marker
