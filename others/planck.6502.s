@@ -632,6 +632,20 @@ dump_stack
         jsr outch
         lda #'='
         jsr outch
+        lda IP+1
+        jsr print_hex
+        lda IP
+        jsr print_hex
+        lda #' '
+        jsr outch
+
+        ; code field pointer
+        lda #'C'
+        jsr outch
+        lda #'F'
+        jsr outch
+        lda #'='
+        jsr outch
         lda W+1
         jsr print_hex
         lda W
