@@ -226,8 +226,17 @@ cA i, 'h, '@, 'a, 'h, '!, 'e, l!
 \ Compare pascal style strings.
 \ Return 1 if they are same 0 otherwise.
 cE i,
-    '#, '?, 'L, k1k0-, '+,  \ 文字列長+1をカウンターとして
-    '{,                     \ Rスタックに保存する
+    \ 最初の1byte文字列長を比較する
+    \ addr2は辞書エントリのためフラグをマスクする
+    'o, '?, 'o, '?,         \ ( c-addr1 c-addr2 len1 len2+flag )
+    'L, k?, '&,             \ 0011 1111 = 3f = '?' ( c-addr1 c-addr2 len1 len2 )
+    'o, '-, 'J,  k7k0-C*,    \ len1, len2が等しければ <cont> へ
+\ <not_equal>
+     '_, '_, '_, 'L, k0k0-, 'e,  \  len1, c-addr1, c-addr2を捨てて0を積む 終了
+\ <cont>
+   '{,                     \ 文字列長をRスタックに保存する
+    'L, k1k0-, '+, '~,      \ c-addr1 c-addr2 のポインタをひとつずつ進める
+    'L, k1k0-, '+, '~,
 \ <loop>
     'o, '?, 'o, '?,         \ ( c-addr1 c-addr2 c1 c2 )         [4]        23 -> 23+1+48=72='H'
     '=, 'J, kCk0-C*,        \ goto <not_equal> if c1<>c2        [3]        19
@@ -414,8 +423,41 @@ c ; i ,
 \ Set immediate-bit of ';'
 l @ C + # { ? k @ k @ + | } $
 
-\ 'd' = 100, '(' = 40, '_' = 95
-\ 'd' * '(' + '_' = 4095 = $0fff
-k 1 k 0 - 
-k d k ( * k _ + !
-: foo ;
+: immediate-bit [ ' L , k @ k @ + , ] ; \ 0x80
+: smudge-bit    [ ' L , k @ , ] ;       \ 0x40
+: length-mask   [ ' L , k o k 0 - , ] ; \ 0x3f
+
+\ ( "name" -- )
+: set-immediate
+    W F C + # { ? immediate-bit | } $
+;
+
+\ Set immediate-bit of single-line comment word \
+\ so that we can write comments in compile-mode.
+set-immediate \
+
+\ Set immediate-bit of 'latest'
+: immediate
+    l @ C + # { ? immediate-bit | } $
+;
+
+: alias-builtin \ ( "name-new" "name-old" -- )
+    \ Create new word "name-new".
+    \ Copy code pointer of builtin word "name-old" to
+    \ the new word "name-new".
+    \ "name-old" must not be a FORTH word.
+    A h @ l @ , l !         \ fill link, update latest
+    W # z # B m             \ fill length and chars of "name-new"
+    [ ' L , k 0 k 0 - , ] B \ fill \0
+    A
+    W F G @ ,               \ fill code-pointer of "name-old"
+;
+
+\ Add new names to builtin primities.
+\ Instead of defining as a new FORTH word like shown below,
+\ the aliases are created by copying their code-pointer.
+\ : new-name old-name ;
+\ Primitive operators which manipulate program counter and return stack
+\ can not be defined as a FORTH word.
+
+alias-builtin quit      Q
