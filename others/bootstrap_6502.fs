@@ -803,51 +803,6 @@ allot-cell : &find! [ ' L , , ] ; \ ( c-addr -- nt ) Throw exception at error
     here over - swap !      \ backfill offset from while to here
 ; immediate
 
-\ === Loops ===
-\ begin <body> <condition> until
-\ begin <body> again
-\ begin <condition> while <body> repeat
-
-\ compile: ( -- dest )
-\ runtime: ( -- )
-: begin
-    here        \ save location
-; immediate
-
-\ compile: ( dest -- )
-\ runtime: ( n -- )
-: until
-    compile 0branch
-    here - ,    \ fill offset
-; immediate
-
-\ compile: ( dest -- )
-\ runtime: ( -- )
-: again
-    compile branch
-    here - ,    \ fill offset
-; immediate
-
-\ compile: ( dest -- orig dest )
-\ runtime: ( n -- )
-\ dest=location of begin
-\ orig=location of while
-: while
-    compile 0branch
-    here swap
-    0 ,        \ save location, fill dummy
-; immediate
-
-\ compile: ( orig dest -- )
-\ runtime: ( -- )
-\ dest=location of begin
-\ orig=location of while
-: repeat
-    compile branch
-    here - ,                \ fill offset from here to begin
-    here over - swap !      \ backfill offset from while to here
-; immediate
-
 \ === Recursive Call ===
 
 \ recursive call.
@@ -969,7 +924,7 @@ allot-cell : &find! [ ' L , , ] ; \ ( c-addr -- nt ) Throw exception at error
     word! dup ? c,              \ fill length( p-addr )
     dup ? { 1+ }                \ ( c-addr len )
     memcpy,                     \ name
-    0 c, align                  \ 0
+    align                       \ 0
     docol ,                     \ compile docol
     ['] lit ,
     here 3 cells + ,            \ compile the address
@@ -1094,7 +1049,7 @@ create exception-marker
 ( === Printing Numbers === )
 
 \ Skip reading spaces, read characters and returns first character
-: char      ( <spaces>ccc -- c ) word! c@ ;
+: char      ( <spaces>ccc -- c ) word! 1+ c@ ;
 
 \ compile-time version of char
 : [char]    ( compile: <spaces>ccc -- ; runtime: --- c )
@@ -1375,6 +1330,22 @@ decimal \ set default to decimal
     drop 1- 0 swap c! drop
 ;
 
+\ PASCAL文字列をPASCAL文字列としてコピーする
+\ ( p-from p-to -- )
+: pstrcpy
+    over c@ dup >r   \ 文字列長を取り出して保存
+    over c!          \ 文字列長をtoにコピー
+    1+ swap 1+ swap
+    r>               \ ( p-from p-to len )
+    begin dup 0> while
+        >r
+        \ ( p-from p-to )
+        over c@ over c!
+        1+ swap 1+ swap r> 1-
+    repeat
+
+;
+
 \ ( c-addr1 c-addr2 u -- f )
 : strneq
     begin dup 0> while
@@ -1455,3 +1426,110 @@ char 0 char B - constant STRING-OVERFLOW-ERROR \ -18
     then
 ; immediate
 
+( === Error Code and Messages === )
+
+\ Single linked list of error code and messages.
+\ Thre structure of each entry:
+\ | link | code | message ... |
+variable error-list
+0 error-list !
+
+: error>next    ( a-addr -- a-addr) @ ;
+: error>message ( a-addr -- c-addr ) 2 cells + ;
+: error>code    ( a-addr -- n ) cell+ @ ;
+
+: add-error ( n c-addr -- )
+    error-list here
+    ( n c-addr )
+    over @ ,    \ fill link
+    swap !      \ update error-list
+    swap ,      \ fill error-code
+    strcpy,     \ fill message
+;
+
+: def-error ( n c-addr "name" -- )
+    create over ,
+    add-error
+    does> @
+;
+
+decimal
+STRING-OVERFLOW-ERROR s" Too long string literal" add-error
+
+variable next-user-error
+s" -256" >number drop next-user-error !
+
+\ Create new user defined error and returns error code.
+: exception ( c-addr -- n )
+    next-user-error @ swap add-error
+    next-user-error @
+    1 next-user-error -!
+;
+
+( === 3rd Stage Interpreter === )
+
+s" -13" >number drop s" Undefined word" def-error UNDEFINED-WORD-ERROR
+:noname
+    find ?dup unless UNDEFINED-WORD-ERROR throw then
+; &find! !
+
+create word-buffer s" 64" >number drop cell+ allot
+
+: interpret
+    word!                   \ read name from input
+    \ ( addr )
+    dup word-buffer strcpy  \ save input
+    dup find                \ lookup dictionary
+    ?dup if
+        \ Found the word
+        nip
+        state @ if
+            \ compile mode
+            dup cell+ c@ immediate-bit and if
+                \ execute immediate word
+                >cfa execute
+            else
+                \ compile the word
+                >cfa ,
+            then
+        else
+            \ immediate mode
+            >cfa execute
+        then
+    else
+        >number unless
+            UNDEFINED-WORD-ERROR throw
+        then
+        \ Not found
+        state @ if
+            \ compile mode
+            [compile] literal
+        then
+    then
+;
+
+:noname
+    rp0 rp! \ drop 2nd stage
+    begin
+        ['] interpret catch
+        ?dup if
+            \ lookup error code
+            error-list @
+            begin ?dup while
+                \ ( error-code error-entry )
+                dup error>code
+                2 pick = if
+                    error>message type
+                    ." : "
+                    word-buffer type cr
+                    bye
+                then
+                error>next
+            repeat
+            ." Unknown error code: "
+            word-buffer type
+            ."  (" 0 .r ." )" cr
+            bye
+        then
+    again
+; execute
